@@ -115,7 +115,7 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
     # Model inference
     try:
         outputs = model(vectorized_tensor)
-        probabilities = torch.softmax(outputs.view(-1, 3), dim=1)[:, 2]
+        probabilities = torch.softmax(outputs.view(-1, 3), dim=1)[:, 2]  # Get "green" probabilities
     except Exception as e:
         st.error(f"Model inference failed: {e}")
         return [("NO SUGGESTIONS", 0.0)] * top_n
@@ -123,8 +123,11 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
     if probabilities.numel() == 0:
         return [("NO SUGGESTIONS", 0.0)] * top_n
 
+    # Ensure that probabilities align with valid_words
+    assert len(probabilities) == len(valid_words), "Mismatch between probabilities and valid words!"
+
     # Get the top suggestions
-    top_indices = torch.argsort(probabilities, descending=True)[:top_n]
+    top_indices = torch.argsort(probabilities, descending=True)[:min(top_n, len(valid_words))]
     suggestions = [(valid_words[i], probabilities[i].item()) for i in top_indices]
 
     # Pad with "NO SUGGESTIONS" if fewer than `top_n` words are available
@@ -132,6 +135,7 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
         suggestions.append(("NO SUGGESTIONS", 0.0))
 
     return suggestions
+
 
 
 def reset_game():
