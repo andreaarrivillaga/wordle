@@ -6,7 +6,7 @@ import random
 import pickle
 
 # Load word list
-with open("words.csv") as f:
+with open("words2.csv") as f:
     word_list = [word.strip().lower() for word in f.readlines() if len(word.strip()) == 5]
 
 print(f"Total valid 5-letter words: {len(word_list)}")
