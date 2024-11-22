@@ -193,15 +193,16 @@ for i in range(rows):
             color, letter = feedback[j]
             background_color = {"green": "#00FF00", "yellow": "#FFFF00", "gray": "#D3D3D3"}.get(color, "#FFFFFF")
             cols_display[j].markdown(
-                f"<div style='text-align:center; background-color:{background_color}; border:1px solid black;'>{letter.upper()}</div>",
+                f"<div style='text-align:center; background-color:{background_color}; color:black; border:1px solid black;'>{letter.upper()}</div>",
                 unsafe_allow_html=True,
             )
     else:
         for j in range(cols):
             cols_display[j].markdown(
-                f"<div style='text-align:center; border:1px solid black;'>&nbsp;</div>",
+                f"<div style='text-align:center; color:black; border:1px solid black;'>&nbsp;</div>",
                 unsafe_allow_html=True,
             )
+
 
 # Remaining attempts
 st.write(f"Remaining Attempts: {st.session_state.attempts}")
