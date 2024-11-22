@@ -51,9 +51,9 @@ def load_model():
 
 
 # Filter valid words based on feedback
-def filter_valid_words(valid_words, guesses):
+def filter_valid_words(valid_words, guesses, excluded_letters):
     """
-    Filter the valid words based on the feedback from previous guesses.
+    Filter the valid words based on the feedback from previous guesses and excluded letters.
     """
     for guess, feedback in guesses:
         for i, (color, letter) in enumerate(feedback):
@@ -63,12 +63,18 @@ def filter_valid_words(valid_words, guesses):
             elif color == "yellow":
                 # Keep only words that contain this letter but not in this position
                 valid_words = [word for word in valid_words if letter in word and word[i] != letter]
-            elif color == "gray":
-                # Remove words that contain this letter unless it appears as green or yellow in another position
-                other_feedback = [fb for j, fb in enumerate(feedback) if j != i]
-                if all(fb[1] != letter for fb in other_feedback):
-                    valid_words = [word for word in valid_words if letter not in word]
+
+    # Update excluded letters only if they haven't been seen as green or yellow elsewhere
+    excluded_letters = set(
+        letter for guess, feedback in guesses for color, letter in feedback if color == "gray" and
+        all(other_color != "green" and other_color != "yellow" for other_color, _ in feedback)
+    )
+
+    # Remove words containing excluded letters
+    valid_words = [word for word in valid_words if all(letter not in word for letter in excluded_letters)]
+
     return valid_words
+
 
 
 def give_feedback(guess, target_word):
