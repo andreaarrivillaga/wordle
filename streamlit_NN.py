@@ -94,15 +94,15 @@ def give_feedback(guess, target_word):
     return feedback
 
 
-def suggest_next_word(model, valid_words, guesses):
+def suggest_top_words(model, valid_words, guesses, top_n=3):
     """
-    Suggest the next word using the model and filtered valid words.
+    Suggest the top `top_n` words using the model and filtered valid words.
     """
     # Filter valid words based on feedback
     valid_words = filter_valid_words(valid_words, guesses)
 
     if not valid_words:
-        return "NO SUGGESTIONS", 0.0
+        return [("NO SUGGESTIONS", 0.0)] * top_n
 
     # Vectorize the valid words
     try:
@@ -110,7 +110,7 @@ def suggest_next_word(model, valid_words, guesses):
         vectorized_tensor = torch.tensor(vectorized, dtype=torch.float32)
     except Exception as e:
         st.error(f"Vectorization failed: {e}")
-        return "NO SUGGESTIONS", 0.0
+        return [("NO SUGGESTIONS", 0.0)] * top_n
 
     # Model inference
     try:
@@ -118,14 +118,20 @@ def suggest_next_word(model, valid_words, guesses):
         probabilities = torch.softmax(outputs.view(-1, 3), dim=1)[:, 2]
     except Exception as e:
         st.error(f"Model inference failed: {e}")
-        return "NO SUGGESTIONS", 0.0
+        return [("NO SUGGESTIONS", 0.0)] * top_n
 
     if probabilities.numel() == 0:
-        return "NO SUGGESTIONS", 0.0
+        return [("NO SUGGESTIONS", 0.0)] * top_n
 
-    # Get the best suggestion
-    best_index = torch.argmax(probabilities).item() // 5
-    return valid_words[best_index], probabilities[best_index * 5].item()
+    # Get the top suggestions
+    top_indices = torch.argsort(probabilities, descending=True)[:top_n]
+    suggestions = [(valid_words[i], probabilities[i].item()) for i in top_indices]
+
+    # Pad with "NO SUGGESTIONS" if fewer than `top_n` words are available
+    while len(suggestions) < top_n:
+        suggestions.append(("NO SUGGESTIONS", 0.0))
+
+    return suggestions
 
 
 def reset_game():
