@@ -163,6 +163,7 @@ current_guess=st.session_state.my_text
 guess_input = st.session_state.my_text
 
 if current_guess and len(current_guess) == 5:
+    current_guess = current_guess.lower()
     # Ensure the word is valid
     if current_guess not in word_list:
         st.warning("Invalid word. Please enter a valid 5-letter word.")
