@@ -104,37 +104,34 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
     if not valid_words:
         return [("NO SUGGESTIONS", 0.0)] * top_n
 
-    # Vectorize the valid words
     try:
+        # Vectorize the valid words
         vectorized = custom_vectorize(valid_words)
         vectorized_tensor = torch.tensor(vectorized, dtype=torch.float32)
-    except Exception as e:
-        st.error(f"Vectorization failed: {e}")
-        return [("NO SUGGESTIONS", 0.0)] * top_n
 
-    # Model inference
-    try:
+        # Model inference
         outputs = model(vectorized_tensor)
         probabilities = torch.softmax(outputs.view(-1, 3), dim=1)[:, 2]  # Get "green" probabilities
+
+        # Ensure alignment between probabilities and valid_words
+        if len(probabilities) != len(valid_words):
+            st.error("Mismatch between probabilities and valid words. Please debug the filtering logic.")
+            return [("NO SUGGESTIONS", 0.0)] * top_n
+
+        # Get the top suggestions
+        top_indices = torch.argsort(probabilities, descending=True)[:min(top_n, len(valid_words))]
+        suggestions = [(valid_words[i], probabilities[i].item()) for i in top_indices]
+
+        # Pad with "NO SUGGESTIONS" if fewer than `top_n` words are available
+        while len(suggestions) < top_n:
+            suggestions.append(("NO SUGGESTIONS", 0.0))
+
+        return suggestions
+
     except Exception as e:
-        st.error(f"Model inference failed: {e}")
+        st.error(f"Error during word suggestion: {e}")
         return [("NO SUGGESTIONS", 0.0)] * top_n
 
-    if probabilities.numel() == 0:
-        return [("NO SUGGESTIONS", 0.0)] * top_n
-
-    # Ensure that probabilities align with valid_words
-    assert len(probabilities) == len(valid_words), "Mismatch between probabilities and valid words!"
-
-    # Get the top suggestions
-    top_indices = torch.argsort(probabilities, descending=True)[:min(top_n, len(valid_words))]
-    suggestions = [(valid_words[i], probabilities[i].item()) for i in top_indices]
-
-    # Pad with "NO SUGGESTIONS" if fewer than `top_n` words are available
-    while len(suggestions) < top_n:
-        suggestions.append(("NO SUGGESTIONS", 0.0))
-
-    return suggestions
 
 
 
