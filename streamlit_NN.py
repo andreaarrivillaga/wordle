@@ -6,7 +6,7 @@ import random
 import pickle
 
 # Load the word list
-with open("words2.csv") as f:
+with open("words.csv") as f:
     word_list = [word.strip().lower() for word in f.readlines() if len(word.strip()) == 5]
 
 print(f"Total valid 5-letter words: {len(word_list)}")
@@ -50,10 +50,10 @@ def load_model():
     return model
 
 
-# Filter valid words based on feedback
-def filter_valid_words(valid_words, guesses):
+# Filter valid words based on feedback and excluded letters
+def filter_valid_words(valid_words, guesses, excluded_letters):
     """
-    Filter the valid words based on the feedback from previous guesses.
+    Filter the valid words based on the feedback from previous guesses and excluded letters.
     """
     for guess, feedback in guesses:
         for i, (color, letter) in enumerate(feedback):
@@ -63,11 +63,10 @@ def filter_valid_words(valid_words, guesses):
             elif color == "yellow":
                 # Keep only words that contain this letter but not in this position
                 valid_words = [word for word in valid_words if letter in word and word[i] != letter]
-            elif color == "gray":
-                # Remove words that contain this letter unless it appears as green or yellow in another position
-                other_feedback = [fb for j, fb in enumerate(feedback) if j != i]
-                if all(fb[1] != letter for fb in other_feedback):
-                    valid_words = [word for word in valid_words if letter not in word]
+
+    # Remove words containing excluded letters
+    valid_words = [word for word in valid_words if all(letter not in word for letter in excluded_letters)]
+
     return valid_words
 
 
@@ -89,12 +88,12 @@ def give_feedback(guess, target_word):
     return feedback
 
 
-def suggest_next_word(model, valid_words, guesses):
+def suggest_next_word(model, valid_words, guesses, excluded_letters):
     """
     Suggest the next word using the model and filtered valid words.
     """
-    # Filter valid words based on feedback
-    valid_words = filter_valid_words(valid_words, guesses)
+    # Filter valid words based on feedback and excluded letters
+    valid_words = filter_valid_words(valid_words, guesses, excluded_letters)
 
     if not valid_words:
         return "NO SUGGESTIONS", 0.0
@@ -131,6 +130,7 @@ def reset_game():
         st.session_state.current_guess = ""
         st.session_state.chosen_word = random.choice(word_list)
         st.session_state.valid_words = word_list.copy()
+        st.session_state.excluded_letters = set()
         st.session_state.suggested_words = []
         st.session_state.game_initialized = True
 
@@ -157,13 +157,9 @@ if "my_text" not in st.session_state:
     st.session_state.my_text = ""
 
 st.text_input("Type your guess (5 letters):", max_chars=5, key="widget", on_change=submit)
-current_guess=st.session_state.my_text
-
-# Set guess input to what was in the text box before clearing
-guess_input = st.session_state.my_text
+current_guess = st.session_state.my_text
 
 if current_guess and len(current_guess) == 5:
-    current_guess = current_guess.lower()
     # Ensure the word is valid
     if current_guess not in word_list:
         st.warning("Invalid word. Please enter a valid 5-letter word.")
@@ -172,12 +168,18 @@ if current_guess and len(current_guess) == 5:
         st.session_state.guesses.append((current_guess, feedback))
         st.session_state.attempts -= 1
 
-        # Filter valid words based on feedback
-        st.session_state.valid_words = [
-            word for word in st.session_state.valid_words if word != current_guess
-        ]
+        # Update excluded letters
+        for color, letter in feedback:
+            if color == "gray":
+                st.session_state.excluded_letters.add(letter)
 
-        suggested_word, probability = suggest_next_word(model, st.session_state.valid_words, st.session_state.guesses)
+        # Filter valid words and generate suggestions
+        suggested_word, probability = suggest_next_word(
+            model,
+            st.session_state.valid_words,
+            st.session_state.guesses,
+            st.session_state.excluded_letters,
+        )
 
         if suggested_word == "NO SUGGESTIONS":
             st.write("No suggestions available.")
@@ -204,7 +206,6 @@ for i in range(rows):
                 unsafe_allow_html=True,
             )
 
-
 # Remaining attempts
 st.write(f"Remaining Attempts: {st.session_state.attempts}")
 
@@ -212,7 +213,6 @@ st.write(f"Remaining Attempts: {st.session_state.attempts}")
 if len(st.session_state.guesses) > 0 and all(color == "green" for color, _ in st.session_state.guesses[-1][1]):
     st.success("Congratulations! You guessed the word!")
     st.session_state.game_initialized = False
-# Check for loss condition only if the player hasn't already won
 elif st.session_state.attempts == 0:
     st.error(f"Game Over! The correct word was: {st.session_state.chosen_word.upper()}")
     st.session_state.game_initialized = False
