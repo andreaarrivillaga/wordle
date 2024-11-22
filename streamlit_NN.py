@@ -211,6 +211,7 @@ st.write(f"Remaining Attempts: {st.session_state.attempts}")
 if len(st.session_state.guesses) > 0 and all(color == "green" for color, _ in st.session_state.guesses[-1][1]):
     st.success("Congratulations! You guessed the word!")
     st.session_state.game_initialized = False
+# Check for loss condition only if the player hasn't already won
 elif st.session_state.attempts == 0:
     st.error(f"Game Over! The correct word was: {st.session_state.chosen_word.upper()}")
     st.session_state.game_initialized = False
