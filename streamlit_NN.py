@@ -181,12 +181,13 @@ if current_guess and len(current_guess) == 5:
             word for word in st.session_state.valid_words if word != current_guess
         ]
 
-        suggested_word, probability = suggest_next_word(model, st.session_state.valid_words, st.session_state.guesses)
+        # Get the top 3 suggestions
+        top_suggestions = suggest_top_words(model, st.session_state.valid_words, st.session_state.guesses, top_n=3)
 
-        if suggested_word == "NO SUGGESTIONS":
-            st.write("No suggestions available.")
-        else:
-            st.write(f"Suggested next word: {suggested_word.upper()} (Probability: {probability:.4f})")
+        st.write("Top suggestions:")
+        for idx, (suggestion, prob) in enumerate(top_suggestions, start=1):
+            st.write(f"{idx}. {suggestion.upper()} (Probability: {prob:.4f})")
+
 
 # Display the game board
 
