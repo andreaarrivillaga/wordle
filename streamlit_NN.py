@@ -6,7 +6,7 @@ import random
 import pickle
 
 # Load the word list
-with open("words.csv") as f:
+with open("words2.csv") as f:
     word_list = [word.strip().lower() for word in f.readlines() if len(word.strip()) == 5]
 
 print(f"Total valid 5-letter words: {len(word_list)}")
@@ -93,7 +93,6 @@ def give_feedback(guess, target_word):
 
     return feedback
 
-
 def suggest_top_words(model, valid_words, guesses, top_n=3):
     """
     Suggest the top `top_n` words using the model and filtered valid words.
@@ -111,12 +110,20 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
 
         # Model inference
         outputs = model(vectorized_tensor)
-        probabilities = torch.softmax(outputs.view(-1, 3), dim=1)[:, 2]  # Get "green" probabilities
 
-        # Ensure alignment between probabilities and valid_words
-        if len(probabilities) != len(valid_words):
-            st.error("Mismatch between probabilities and valid words. Please debug the filtering logic.")
-            return [("NO SUGGESTIONS", 0.0)] * top_n
+        # Debugging model output shape
+        #st.write(f"Model raw output shape: {outputs.shape}")
+
+        # Ensure proper reshaping to match valid words
+        outputs = outputs.view(len(valid_words), 5, 3)
+        #st.write(f"Reshaped model output shape: {outputs.shape}")
+
+        # Extract "green" probabilities
+        probabilities = torch.softmax(outputs, dim=2)[:, :, 2].mean(dim=1)  # Average green probabilities across 5 letters
+        #st.write(f"Probabilities shape after processing: {probabilities.shape}")
+
+        # Ensure alignment between probabilities and valid words
+        assert len(probabilities) == len(valid_words), "Mismatch between probabilities and valid words!"
 
         # Get the top suggestions
         top_indices = torch.argsort(probabilities, descending=True)[:min(top_n, len(valid_words))]
@@ -131,8 +138,6 @@ def suggest_top_words(model, valid_words, guesses, top_n=3):
     except Exception as e:
         st.error(f"Error during word suggestion: {e}")
         return [("NO SUGGESTIONS", 0.0)] * top_n
-
-
 
 
 def reset_game():
