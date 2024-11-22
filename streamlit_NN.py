@@ -51,10 +51,12 @@ def load_model():
 
 
 # Filter valid words based on feedback
-def filter_valid_words(valid_words, guesses, excluded_letters):
+def filter_valid_words(valid_words, guesses):
     """
-    Filter the valid words based on the feedback from previous guesses and excluded letters.
+    Filter the valid words based on the feedback from previous guesses.
     """
+    excluded_letters = set()  # Track letters that should not appear in valid words
+
     for guess, feedback in guesses:
         for i, (color, letter) in enumerate(feedback):
             if color == "green":
@@ -63,18 +65,15 @@ def filter_valid_words(valid_words, guesses, excluded_letters):
             elif color == "yellow":
                 # Keep only words that contain this letter but not in this position
                 valid_words = [word for word in valid_words if letter in word and word[i] != letter]
+            elif color == "gray":
+                # Add letter to excluded list, unless it has been marked green or yellow elsewhere
+                if not any(fb[0] in {"green", "yellow"} and fb[1] == letter for fb in feedback):
+                    excluded_letters.add(letter)
 
-    # Update excluded letters only if they haven't been seen as green or yellow elsewhere
-    excluded_letters = set(
-        letter for guess, feedback in guesses for color, letter in feedback if color == "gray" and
-        all(other_color != "green" and other_color != "yellow" for other_color, _ in feedback)
-    )
-
-    # Remove words containing excluded letters
+    # Remove words containing any excluded letters
     valid_words = [word for word in valid_words if all(letter not in word for letter in excluded_letters)]
 
     return valid_words
-
 
 
 def give_feedback(guess, target_word):
@@ -163,7 +162,7 @@ if "my_text" not in st.session_state:
     st.session_state.my_text = ""
 
 st.text_input("Type your guess (5 letters):", max_chars=5, key="widget", on_change=submit)
-current_guess=st.session_state.my_text
+current_guess = st.session_state.my_text
 
 # Set guess input to what was in the text box before clearing
 guess_input = st.session_state.my_text
