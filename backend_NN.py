@@ -109,4 +109,12 @@ for epoch in range(num_epochs):
 
 # Save the model
 torch.save(model.state_dict(), "wordle_nn.pth")
+
+#see trained model.state_dict() variables in human readable form. 
+# Print optimizer's state_dict
+# print("Model's state_dict:")
+# for var_name in model.state_dict():
+#     print(var_name, "\t", model.state_dict()[var_name])
+
+print("Model saved.")
 print("Model saved.")
