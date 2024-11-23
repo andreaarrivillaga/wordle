@@ -117,4 +117,3 @@ torch.save(model.state_dict(), "wordle_nn.pth")
 #     print(var_name, "\t", model.state_dict()[var_name])
 
 print("Model saved.")
-print("Model saved.")
