@@ -9,6 +9,7 @@ import pickle
 with open("words2.csv") as f:
     word_list = [word.strip().lower() for word in f.readlines() if len(word.strip()) == 5]
 
+#this is just to know how many 4 letter words are in the csv file
 print(f"Total valid 5-letter words: {len(word_list)}")
 
 # Generate training data
@@ -46,8 +47,8 @@ def custom_vectorize(word_list):
 
 # Generate training data
 training_words, training_labels = generate_training_data(word_list)
-X = custom_vectorize(training_words)  # Shape: (n_samples, 130)
-y = torch.tensor(training_labels, dtype=torch.long)  # Shape: (n_samples, 5)
+X = custom_vectorize(training_words)  # Shape: (n_samples, 130) (130 because each word is made of 5 letter * 26 (letters))
+y = torch.tensor(training_labels, dtype=torch.long)  # Shape: (n_samples, 5) 
 
 
 # Save the custom vectorize function for frontend use
@@ -56,15 +57,15 @@ with open("wordle_vectorizer.pkl", "wb") as f:
 print("Vectorizer saved.")
 
 
-# Convert X to tensor
+# Convert to PyTorch tensors
 X_tensor = torch.tensor(X, dtype=torch.float32)
 
 # Define the model
 class WordleNN(nn.Module):
     def __init__(self):
         super(WordleNN, self).__init__()
-        self.fc1 = nn.Linear(26 * 5, 128)  # Input size: 130
-        self.fc2 = nn.Linear(128, 15)  # Output: 5 positions * 3 states
+        self.fc1 = nn.Linear(26 * 5, 128)  # Input size: 130, linear layer 1
+        self.fc2 = nn.Linear(128, 15)  # Output: 5 positions * 3 states, linear layer 2
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
@@ -78,7 +79,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # Training loop
 print("Training the model...")
 batch_size = 64
-num_epochs = 10
+num_epochs = 10 #Epochs = how many times this thing has to run
 
 for epoch in range(num_epochs):
     model.train()
@@ -93,14 +94,14 @@ for epoch in range(num_epochs):
         batch_y_flat = batch_y.view(-1)
 
         # Forward pass
-        optimizer.zero_grad()
+        optimizer.zero_grad()# you have to zero up the gradient
         outputs = model(batch_X)  # Output shape: (batch_size, 5, 3)
         outputs_flat = outputs.view(-1, 3)  # Flatten predictions for loss function
 
         # Compute loss
-        loss = criterion(outputs_flat, batch_y_flat)
-        loss.backward()
-        optimizer.step()
+        loss = criterion(outputs_flat, batch_y_flat) 
+        loss.backward() # calculates all of my deltas
+        optimizer.step() #takes all of does deltas  + learning rates
 
         epoch_loss += loss.item() * batch_X.size(0)
 
