@@ -175,6 +175,7 @@ if "my_text" not in st.session_state:
 
 st.text_input("Type your guess (5 letters):", max_chars=5, key="widget", on_change=submit)
 current_guess = st.session_state.my_text
+current_guess = st.session_state.my_text.lower()
 
 # Set guess input to what was in the text box before clearing
 guess_input = st.session_state.my_text
