@@ -14,6 +14,8 @@ print(f"Total valid 5-letter words: {len(word_list)}")
 
 # Generate training data
 def generate_training_data(word_list):
+    #data = list of words that serve as the model's input 
+    #labels = A list of feedback corresponding to the guesses, represented numerically as 2 (green), 1 (yellow), and 0 (gray).
     data, labels = [], []
     for target_word in random.sample(word_list, 500):  # Randomly sample target words
         for word in word_list:
@@ -52,6 +54,7 @@ y = torch.tensor(training_labels, dtype=torch.long)  # Shape: (n_samples, 5)
 
 
 # Save the custom vectorize function for frontend use
+# https://docs.python.org/3/library/pickle.html
 with open("wordle_vectorizer.pkl", "wb") as f:
     pickle.dump(custom_vectorize, f)
 print("Vectorizer saved.")
@@ -106,9 +109,12 @@ for epoch in range(num_epochs):
         epoch_loss += loss.item() * batch_X.size(0)
 
     epoch_loss /= len(X_tensor)
+    #This just helps me monitor the model's training progress
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss:.4f}")
 
 # Save the model
+#https://pytorch.org/docs/stable/generated/torch.save.html
+#Saves the model's parameters (weights and biases)
 torch.save(model.state_dict(), "wordle_nn.pth")
 
 #see trained model.state_dict() variables in human readable form. 
